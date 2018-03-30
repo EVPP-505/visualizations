@@ -10,6 +10,7 @@ Today we are going to talk about how to visualize data in R.  There are multiple
 
 ```{r libraries}
 library(tidyverse)
+
 ```
 
 ## A Simple Plot
@@ -28,7 +29,7 @@ Being a part of the `tidyverse` means `ggplot2` works best with *tidy data*.  Fo
 
 ```{r}
 # put the data into a tibble
-df1 <- tibble(x=x,y=y,y2=y2)
+df1 <- tibble(x = x, y = y, y2 = y2)
 
 # take a look at the data
 df1
@@ -68,6 +69,9 @@ Start with the base data object, adding a point to each element.
 ```{r add-point}
 # create a very basic point plot
 g + geom_point()
+
+ggplot(df1) +
+  geom_line(aes(y2, x))
 ```
 
 Notice that the call above did not assign the output to a new variable; we simply generated the plot using the base data object and assigning the aesthetics to a point geometry.  We can easily assign the output to a variable for use later or to save, but it's not necessary if you only want to see the plot.
@@ -75,15 +79,17 @@ Notice that the call above did not assign the output to a new variable; we simpl
 Now *add* a title:
 
 ```{r add-title}
-g + geom_point() +
+g + geom_point(aes(y2, x)) +
   ggtitle("Our First Amazing Plot") 
 ```
 
 Great, but we can fine-tune the plot, *adding* elements like axis labels.
 
 ```{r add-axis}
+
+t <- "Our First Amazing Plot"
 g + geom_point() +
-  ggtitle("Our First Amazing Plot") +
+  ggtitle(t) +
   xlab("Shared X Coordinates") +
   ylab("Y Label")
 ```
@@ -103,10 +109,11 @@ g + geom_point() +
 `ggplot2` also supports multiple geometries on the same plot as long as the data share a common coordinate system and range.  Scales can also be added for a shared axis with a different range of values to accomodate different datasets (e.g. temperature and precipitation), but that's more advanced.  For now let's *add* a second variable with a shared axis.
 
 ```{r add-variable}
+z <- x^3
 # Note that in the call to geom_point() we are using aes() to pass 
 # different arguments, color, size and fill in this case.
 g + geom_point() + # plot our original x, y data
-  geom_point(aes(x, y2)) + # co-plot a second variable
+  geom_point(aes(y = z, x = y2)) + # co-plot a second variable
   ggtitle("Our First Amazing Plot\nNow with TWO Variables!") +
   xlab("Shared X Coordinates") +
   ylab("Y Label") + 
@@ -116,7 +123,7 @@ g + geom_point() + # plot our original x, y data
 Now that we have visualized several elements, we can learn how to further refine elements of the plot.  For example, we can add color and size to some points, and add a new line.
 
 ```{r add-scaled-color}
-g + geom_point() +
+g + geom_point(color = "red") +
   geom_point(aes(x, y2), color="lightblue", size=4) + # co-plot a second variable with a different color
   geom_line(aes(x, y2), linetype="dashed", size=1.5, alpha=0.6) + #add a transparent dashed line to the y2 line
   ggtitle("Our First Amazing Plot\nNow with TWO Variables!") +
@@ -140,7 +147,7 @@ g + geom_point(aes(color=y2, size=y2, fill=y2), shape=24) +
   ylab("Y Label") +
   ggtitle("Our First Amazing Plot\nNow with TWO Variables!") + 
   theme_dark() +
-  theme(legend.box = "horizontal")
+  theme(legend.box = "horizontal", legend.position = "bottom")
 # notice that ggplot2 adds the legends automatically
 # we can make changes using the theme() function
 ```
@@ -148,17 +155,19 @@ g + geom_point(aes(color=y2, size=y2, fill=y2), shape=24) +
 An important note regarding scale_ (gradient, fill, etc.) functions.  `ggplot2` current only support ONE scale_ per geometry.  That means that the colors and fill gradients assigned to the plot the first point geometry is the only one available, and we CANNOT assign a new color ramp to the second set of point values.  New geometries will inherit the last color used, which can lead to some confusion about what is happening.  We can reuse the same scale_ value for BOTH sets.  We can also assign new value for other geometries (the lines for example).  
 
 ```{r}
-g + geom_point(aes(color = y2, size = y2, fill = y2), shape=24) +
+g1 <- g + geom_point(aes(color = y2, size = y2, fill = y2), shape=24) +
   geom_point(aes(x = x, y = y2, color = y2), size=4) + #we can co-plot a second variable with same colors
   scale_color_gradient(low="red", high = "yellow", name = "Color") + #change the color of the shapes
   scale_fill_gradient(low="yellow", high="red", name = "Fill") + #change the color of the fill
   geom_line(aes(x, y2, color = y), size = 1.5, alpha=.6) + #add a transparent dashed line
-  # scale_color_gradient(low = "blue", high = "green", name = "Line") + #replaces the legend item
+  scale_color_gradient(low = "blue", high = "green", name = "Line") + #replaces the legend item
   xlab("Shared X Coordinates") +
   ylab("Y Label") +
   ggtitle("Our First Amazing Plot\nNow with TWO Variables!") + 
   theme_dark() +
   theme(legend.box = "horizontal")
+
+ggsave(g1, filename = "testplot.png", width = "6cm", height = "8")
 ```
 
 
