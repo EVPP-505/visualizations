@@ -39,7 +39,8 @@ sjer_veg %>%
   group_by(plotid) %>% 
   summarise(m = mean(maxcanopydiam)) %>% 
   ggplot(aes(x = plotid, y = m)) +
-    geom_col() + # a column plot for each entry
+    # geom_bar(stat = "identity") + # a column plot for each entry
+    geom_col() + # geom_col is a convenience function for using values instead of counts
     ggtitle("SJER Distribution of Canopy Diameter by Plot") +
     xlab("Plot ID") + 
     ylab("Max Diameter (m)") +
@@ -60,7 +61,8 @@ sjer_veg %>%
     geom_point(aes(color = livingcanopy), size = 3) + # change the point size
     scale_color_gradient(low = "red", high = "green", 
                          name = "Percent Living", # add a label for the legend
-                         labels = scales::unit_format("%")) + # reformat the units
+                         labels = scales::unit_format("%"), # reformat the units
+                         breaks = c(0, 50, 100)) + # change the breakpoints in the scale
     geom_abline( size = 1, color = "blue") + # add a regression line
     ggtitle("SJER Relationship of Percent Living Canopy by Canopy Structure") + # add title
     xlab("Stem Height (m)") + # add x label
@@ -70,7 +72,6 @@ sjer_veg %>%
 
 # how can we improve this plot?
 ```
-
 
 
 
