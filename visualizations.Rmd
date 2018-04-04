@@ -148,16 +148,19 @@ g + geom_point(aes(color=y2, size=y2, fill=y2), shape=24) +
 An important note regarding scale_ (gradient, fill, etc.) functions.  `ggplot2` current only support ONE scale_ per geometry.  That means that the colors and fill gradients assigned to the plot the first point geometry is the only one available, and we CANNOT assign a new color ramp to the second set of point values.  New geometries will inherit the last color used, which can lead to some confusion about what is happening.  We can reuse the same scale_ value for BOTH sets.  We can also assign new value for other geometries (the lines for example).  
 
 ```{r}
-g + geom_point(aes(color = y2, size = y2, fill = y2), shape=24) +
-  geom_point(aes(x = x, y = y2, color = y2), size=4) + #we can co-plot a second variable with same colors
-  scale_color_gradient(low="red", high = "yellow", name = "Color") + #change the color of the shapes
-  scale_fill_gradient(low="yellow", high="red", name = "Fill") + #change the color of the fill
-  geom_line(aes(x, y2, color = y), size = 1.5, alpha=.6) + #add a transparent dashed line
+g + geom_point(aes(color = y2, size = y2, fill = y2), shape=21) +
+  geom_point(aes(x = x, y = y2, color = y2), size=4) +
+  geom_point(aes(x = y2,y = x, color = x), size=4)+#we can co-plot a second variable with same colors
+  scale_color_gradient(low="lightgreen", high = "darkgreen", name = "Color") + #change the color of the shapes
+  scale_fill_gradient(low="lightgreen", high="darkgreen", name = "Fill") + #change the color of the fill
+  geom_line(aes(x, y2, color = y), size = 1.5, alpha=.6) +
+  geom_line(aes(x,y,color=x), size=1.5, alpha=.6)+
+  geom_line(aes(y2,x, color=x), size=1.5, alpha=.6)+#add a transparent dashed line
   # scale_color_gradient(low = "blue", high = "green", name = "Line") + #replaces the legend item
   xlab("Shared X Coordinates") +
   ylab("Y Label") +
-  ggtitle("Our First Amazing Plot\nNow with TWO Variables!") + 
-  theme_dark() +
+  ggtitle("Our First Amazing Plot\nNow with TWO Variables\nChanged a little bit!") + 
+  theme_classic() +
   theme(legend.box = "horizontal")
 ```
 
