@@ -76,7 +76,7 @@ ggplot(sjer_chem, aes(x = totalN, y = totalC)) +
 
 ```
 
-`facet_wrap()` is used when there is a single value to split the plots.  The first argument to `factwrap()` is a formula that starts with a `~`.  A forumla in this case is not strictly an equation.  Rather, the formula refers to data structure.
+`facet_wrap()` is used when there is a single value to split the plots.  The first argument to `facet_wrap()` is a formula that starts with a `~`.  A forumla in this case is not strictly an equation.  Rather, the formula refers to data structure.
 
 We can use multiple grouping factors to generate related plots as well.  Let's take a look at genus and species.  There are too many variables is we include all groups, so maybe we can look at just trees...
 
