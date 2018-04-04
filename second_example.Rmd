@@ -119,19 +119,46 @@ p2 <- sjer_chem %>%
   ggtitle("Quercus species")
 
 p3 <- sjer_chem %>% 
-  group_by(species) %>% 
+  group_by(genus) %>% 
   summarise(m = mean(total_sample_mass)) %>% 
-  ggplot(aes(x = species, y = m)) +
+  ggplot(aes(x = genus, y = m)) +
   geom_col() + 
-  labs(title = "Sample mass by species", x = "Species", y = "Dry Mass (g)") +
+  labs(title = "Sample mass by species", x = "Genus", y = "Dry Mass (g)") +
   theme(plot.margin=unit(c(.5,1,.5,1), "cm"), #adjust the margin (top, right, bottom, left)
-          axis.text.x = element_text(angle = -60, hjust = -0.1)) # rotate the axis labels
+  axis.text.x = element_text(angle = -20, hjust = -0.1)) # rotate the axis labels
 
-
-grid.arrange(p1, p2, p3, nrow = 2, top = "Chemical Concentrations by Genus")
 
 # A more complex layout requires nesting "grobs" of arranged plots into a different arrangment
 grid.arrange(arrangeGrob(p1, p2, nrow = 1), arrangeGrob(p3),
              nrow = 2, top = "Chemical Concentrations by Genus")
 ```
+
+
+Let's take a closer look at just the two point geometry plots.  Let's stack them this time.
+
+```{r}
+grid.arrange(p1, p2, nrow = 2, top = "Chemical Concentrations by Genus")
+```
+
+We can see that the ranges of values don't align, which can be a problem since we can't immediately compare distributions.  To fix this, we can add new limits to the axes to make align the ranges.  There is a simple functions for this purpose: xlim, ylim, lims.  Notice we didn't have to do this for the facet plots.  ggplot handles it for you.
+
+```{r}
+# set the limits to the same range
+# an NA in any given position retains the existing limit
+p1a <- p1 + lims(y = c(NA, 60), x = c(0.8, 2.5))
+
+p2a <- p2 + lims(y = c(NA, 60), x = c(0.8, 2.5))
+
+grid.arrange(p1a, p2a, nrow = 2, top = "Chemical Concentrations by Genus")
+```
+
+You can use this same idea to restrict the range of data you are interested in.
+
+```{r}
+# a simple example restricting the range of the x axis.
+p1 + xlim(1.2, 1.75)
+```
+
+
+
 
