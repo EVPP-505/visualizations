@@ -1,0 +1,137 @@
+---
+title: "Extended Visualizations"
+output: html_notebook
+---
+
+```{r libraries}
+library(tidyverse)
+library(gridExtra)
+```
+
+
+Now that we understand the basics of `ggplot2` we can start to explore more advanced techniques.  Our goal in visualizing data is to *clearly* communicate our result.  One thing to keep in mind is a complicated plot might be fun to develop, but it might not any more effective at communicating the results.  Modifying color, shape, size, or adding annotations can muddy the relationship you are trying to uncover.
+
+Let's start with a different NEON data set.  This time we will use the foliar chemistry data set.
+
+```{r load-data}
+sjer_chem <- read_csv("data/D17_2013_SJER_foliarChem.csv")
+
+sjer_chem
+```
+
+We can look at the metadata file in the data directory to find out what the variables are.  We have several categorical fields that might be of use (genus, species, plant_type), along with multiple continuous measurements of leaf chemical concentrations.
+
+Let's ask a simple question, what is the relationship between total nitrogen and carbon in the samples
+
+```{r}
+ggplot(sjer_chem, aes(totalN, totalC)) +
+  geom_point()
+```
+
+It might be better to look at this by plant type.  A quick look at the data show that there are two spellings of shrub, and we might also want to reduce the number of groups.  Our data wrangling skills can to do that by creating (mutating) a new grouping factor.  This is a little more compicated, but here is the code to change the values.
+
+```{r plant-type}
+# look at original values
+sjer_chem %>%
+  distinct(plant_type)
+
+# add a new column to the original data with the assigned values
+sjer_chem <- sjer_chem %>% 
+  # use case_when to assign various values to a single new value
+  mutate(plant_type_fixed = case_when(
+    x %in% c("shrub", "Shrub", "Subshrub; Shrub", "Shrub;Subshrub") ~ "Shrub",
+    x %in% c("Tree", "Tree; Shrub", "Tree;Shrub") ~ "Tree",
+    TRUE ~ "Unknown")
+    )
+sjer_chem
+```
+
+Now regenerate the plot with the new factor
+
+```{r plant-type-fixed}
+ggplot(sjer_chem, aes(x = totalN, y = totalC, color = plant_type_fixed)) +
+  geom_point() +
+  # a different way to assign labels at once
+  labs(title = "SJER Total Carbon vs. Nitrogen by plant type",
+       x = "Total C",
+       y = "Total N",
+       color = "Plant Type")
+```
+
+Now we have a basic plot to add new concepts.
+
+## Facets
+
+A facet is a quick way to generate multiple plots by a factor in the data.  Using our new data, we can quickly generate a new plot for each plant type to visualze patterns _within_ as well as _between_ the types.
+
+```{r facet-types}
+ggplot(sjer_chem, aes(x = totalN, y = totalC)) +
+  geom_point() +
+  facet_wrap(~ plant_type_fixed) +
+  # a different way to assign labels at once
+  labs(title = "SJER Total Carbon vs. Nitrogen by plant type",
+       x = "Total C",
+       y = "Total N",
+       color = "Plant Type") 
+
+```
+
+`facet_wrap()` is used when there is a single value to split the plots.  The first argument to `factwrap()` is a formula that starts with a `~`.  A forumla in this case is not strictly an equation.  Rather, the formula refers to data structure.
+
+We can use multiple grouping factors to generate related plots as well.  Let's take a look at genus and species.  There are too many variables is we include all groups, so maybe we can look at just trees...
+
+```{r genus-species}
+sjer_chem %>% 
+  filter(plant_type_fixed == "Tree") %>% 
+ggplot(aes(x = totalN, y = totalC, color = plant_type_fixed)) +
+  geom_point() +
+  # a different way to assign labels at once
+  labs(title = "SJER Total Carbon vs. Nitrogen by plant type",
+       x = "Total C",
+       y = "Total N",
+       color = "Plant Type") +
+  facet_grid(genus ~ species) + 
+  theme(plot.margin=unit(c(.5,1,.5,1), "cm"), #adjust the margin (top, right, bottom, left)
+          axis.text.x = element_text(angle = -60, hjust = -0.1)) # rotate the axis labels
+
+```
+
+It's still a crowded plot, but you can start to see what's possible.
+
+But what if you want to see different plots on the same page?
+
+There are other methods for placing multiple plots in the same space, but it requires other libraries.  We will use the `gridExtra`.  The `gridExtra` package allows us to place *different* plot types in various arrangements.  We can think of this as a table of plots, and we can assign specific plots to specific table cells.
+
+
+Let's look at a a more specific series of data, comparing two different genus of trees.
+
+```{r}
+p1 <- sjer_chem %>% 
+  filter(genus == "Pinus") %>% 
+  ggplot(aes(x = totalN, y = totalC)) +
+  geom_point() +
+  ggtitle("Pinus species")
+
+p2 <- sjer_chem %>% 
+  filter(genus == "Quercus") %>% 
+  ggplot(aes(x = totalN, y = totalC)) +
+  geom_point() +
+  ggtitle("Quercus species")
+
+p3 <- sjer_chem %>% 
+  group_by(species) %>% 
+  summarise(m = mean(total_sample_mass)) %>% 
+  ggplot(aes(x = species, y = m)) +
+  geom_col() + 
+  labs(title = "Sample mass by species", x = "Species", y = "Dry Mass (g)") +
+  theme(plot.margin=unit(c(.5,1,.5,1), "cm"), #adjust the margin (top, right, bottom, left)
+          axis.text.x = element_text(angle = -60, hjust = -0.1)) # rotate the axis labels
+
+
+grid.arrange(p1, p2, p3, nrow = 2, top = "Chemical Concentrations by Genus")
+
+# A more complex layout requires nesting "grobs" of arranged plots into a different arrangment
+grid.arrange(arrangeGrob(p1, p2, nrow = 1), arrangeGrob(p3),
+             nrow = 2, top = "Chemical Concentrations by Genus")
+```
+
