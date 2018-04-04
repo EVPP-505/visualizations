@@ -1,0 +1,237 @@
+---
+title: "Visualizations Assignment"
+author: "Chase LaDue"
+date: "4/3/2018"
+output: html_document
+---
+
+First, I'll start with the code that was given in `working_example.Rmd`.
+
+```{r package-data}
+
+library(tidyverse) # loading package
+
+sjer_veg <- read_csv("data/D17_2013_SJER_vegStr.csv") # loading data
+
+```
+
+Now, let's plot the graph that we'll be starting with.
+
+```{r base-graph}
+
+g <- sjer_veg %>% 
+  select(maxcanopydiam, stemheight, livingcanopy) %>% 
+  ggplot(aes(x = stemheight, y = maxcanopydiam)) + 
+    geom_point(aes(color = livingcanopy)) +
+    scale_color_gradient(low = "red", high = "green")
+
+g # view graph
+
+```
+
+Let's start off by providing appropriate labels for the title, axes, and legend.
+
+```{r labels}
+
+# data description is available in file "veg_metadata_desc_DataInstitute2016.csv"
+
+# Future self: to get rid of error message of replacing color gradient argument, let's eliminate that from g real quick:
+
+g <- sjer_veg %>% 
+  select(maxcanopydiam, stemheight, livingcanopy) %>% 
+  ggplot(aes(x = stemheight, y = maxcanopydiam)) + 
+    geom_point(aes(color = livingcanopy)) #+
+#    scale_color_gradient(low = "red", high = "green")
+
+# That's better. Now we can proceed.
+
+g.1 <- g +
+  scale_color_gradient(low = "red", high = "green", name = "% of canopy alive") + # legend label
+  xlab("Distance from ground to highest stem (m)") + # added x-axis label
+  ylab("Maximum canopy diameter (m)") + # added y-axis label
+  ggtitle("Relationship between\nCanopy Diameter and Distance to Highest Stem") # graph title
+
+g.1 # view updated graph
+```
+
+Now readers can better understand what's being plotted and compared. Let's change the look of this graph now by changing the theme and cleaning up unnecessary elements.
+
+```{r theme-change}
+
+custom.theme <- theme(panel.grid.major = element_blank(), # these lines gets rid of distracting grid in background
+                      panel.grid.minor = element_blank(),
+                      panel.background = element_rect(fill="white"),
+                      axis.line = element_line(colour="black"), # this changes axes lines to black
+                      axis.text.x = element_text(colour="black", size=10), # changes axes text (numbers)
+                      axis.text.y = element_text(colour="black", size=10),
+                      axis.title.x = element_text(colour="black", size=12, face="bold"), # changes axes labels
+                      axis.title.y = element_text(colour="black", size=12, face="bold"),
+                      plot.title = element_text(face="bold",hjust=0.5), # centers plot title
+                      legend.title = element_text(face="bold", size=10), # changes legend title text
+                      legend.title.align = 0.5, # centers legend title
+                      legend.text = element_text(size=8), # changes legend text
+                      legend.background = element_rect(fill="#F6F6F6", colour = "black")) # adds background and border to legend
+
+g.2 <- g.1 + custom.theme
+
+g.2 # view updated graph
+```
+
+With cleaned-up graph, it is difficult to estimate the values of the points on the graph. A solution to this problem is to increase the frequency of tick marks.
+
+```{r tick-marks}
+
+g.3 <- g.2 + 
+  scale_y_continuous(breaks=seq(0,35,by=5)) + # sets tick marks every 5 units on y axis
+  scale_x_continuous(breaks=seq(0,30,by=2)) # sets tick marks every 2 units on x axis
+
+g.3 # view updated graph
+
+```
+
+There seems to be one point that does not follow the same pattern as the rest: it has low distance to highest stem, but large canopy diameter. Therefore, this point may be of interest to researchers. Let's label that point with its individual id...this data is contained in the column "indvidual_id", which is the auto-assigned unique stem identification number.
+
+```{r annotate}
+
+# First, let's find the point of interest
+sjer_veg %>%
+  filter(maxcanopydiam > 30) %>% 
+  select(indvidualid, stemheight, maxcanopydiam)
+
+# So we know the ID of the point is 1452, and its coordinates are (0.6, 34)
+
+g.4 <- g.3 +
+  annotate("text", x=2, y=34, size=3, label = "1452", col = "blue") # moved the text a bit to the right so it doesn't cover point
+
+g.4 # view updated graph
+```
+
+Let's put a linear regression line on top of the data.
+
+```{r regression}
+
+# First, create the linear model:
+
+model <- lm(maxcanopydiam ~ stemheight, sjer_veg)
+summary(model)
+
+# We find out the r^2 value is 0.5221. We can add this as an annotation to the chart.
+
+g.5 <- g.4 + 
+  stat_smooth(method=lm, formula=y~x, se=FALSE, colour="blue", linetype="dotted") + #adding the linear model line
+  annotate("text", label="r^2 == 0.52", parse = TRUE, x= 22, y = 0, col = "blue") #adding the r^2 value
+
+g.5 # view updated graph
+
+```
+
+Let's take a look at the other dataset.
+
+```{r load-data-2}
+
+data.2 <- read_csv("data/D17_2013_SJER_foliarChem.csv")
+
+View(data.2)
+
+```
+
+Since I'm unfamiliar with the dataset, let's plan on just plotting the average height of each genus. To begin, let's look at the data with `dplyr`.
+
+```{r data-wrangle}
+
+data.3 <- data.2 %>% 
+  group_by(genus) %>% 
+  summarize(mean = mean(avg_canopy_ht), n = n(), stdev = sd(avg_canopy_ht), sterr = (stdev/n))
+
+
+plot.data <- data.3 %>% 
+    arrange(desc(mean))
+
+```
+
+It seems like the best way to summarize these data in a plot is with a bar graph, with each bar representing the average height for a given genus. Sounds like a plan. Let's start by setting up the plot.
+
+```{r initial-plot}
+
+h <- plot.data %>% 
+  ggplot(aes(x = genus, y = mean)) +
+  geom_bar(stat="identity")
+
+h
+```
+
+Ok. Let's clean up this graph. We can use the custom theme that I used in the last plot, and tweak some other things.
+
+```{r clean-up-graph-2}
+
+h.1 <- h + custom.theme +
+  xlab("Genus") + # added x-axis label
+  ylab("Average sampling canopy height (m)") + # added y-axis label
+  ggtitle("Relationship between\nGenus and Canopy Height") + # graph title
+  theme(axis.text.x = element_text(angle=30, hjust=1, vjust=1, face = "italic")) # put tick labels at an angle and italicize genus names
+  
+h.1 # view updated graph
+```
+
+Adding error bars to the graph will help readers better understand the data. And we calculated standard deviation during the data wrangling phase.
+
+```{r error-bars}
+
+h.2 <- h.1 + 
+  geom_errorbar(aes(ymin=mean-sterr, ymax=mean+sterr, width=.2))
+
+h.2
+```
+
+This is good. But standard deviation may be artificially large in some genera due to sampling effort. To add another layer of interpretation of the data, we can base the color of the bars on sample size (n). We also calculated this statistic during the data wrangling phase.
+
+```{r bar-color}
+
+# First, we need to go back and edit our layout of the graph.
+h <- plot.data %>% 
+  ggplot(aes(x = genus, y = mean, fill=n)) +
+  geom_bar(stat="identity")
+h.1 <- h + custom.theme +
+  xlab("Genus") + 
+  ylab("Average sampling canopy height (m)") + 
+  ggtitle("Relationship between\nGenus and Canopy Height") + 
+  theme(axis.text.x = element_text(angle=30, hjust=1, vjust=1, face = "italic"))
+h.2 <- h.1 + 
+  geom_errorbar(aes(ymin=mean-sterr, ymax=mean+sterr, width=.2))
+
+h.3 <- h.2 +
+  scale_fill_gradient(low = "lightsteelblue1", high = "royalblue4", name = "Number of samples")
+
+h.3 # view updated graph
+
+```
+
+This looks good. But perhaps data interpretation would be even easier if the bars were organized in descending order by mean canopy height. Let's try to do that.
+
+```{r descending-bars}
+h <- plot.data %>% 
+  ggplot(aes(x =reorder(genus, -mean), y = mean, fill=n)) + #this is the code I changed to reorder bars
+  geom_bar(stat="identity")
+h.1 <- h + custom.theme +
+  xlab("Genus") + 
+  ylab("Average sampling canopy height (m)") + 
+  ggtitle("Relationship between\nGenus and Canopy Height") + 
+  theme(axis.text.x = element_text(angle=30, hjust=1, vjust=1, face = "italic"))
+h.2 <- h.1 + 
+  geom_errorbar(aes(ymin=mean-sterr, ymax=mean+sterr, width=.2))
+h.4 <- h.2 +
+  scale_fill_gradient(low = "lightsteelblue1", high = "royalblue4", name = "Number of samples") +
+  scale_y_continuous(breaks=seq(0,6,by=1)) # I also changed this to make the y-axis tick marks more precise
+
+h.4
+```
+
+Great. Now let's export both graphs.
+
+```{r graph-export}
+g.5
+ggsave(filename = "graph.1.png", width = 6.5, height = 4.25)
+h.4
+ggsave(filename = "graph.2.png", width = 6.5, height = 4.25)
+```
+
