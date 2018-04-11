@@ -39,8 +39,8 @@ sjer_chem %>%
 sjer_chem <- sjer_chem %>% 
   # use case_when to assign various values to a single new value
   mutate(plant_type_fixed = case_when(
-    x %in% c("shrub", "Shrub", "Subshrub; Shrub", "Shrub;Subshrub") ~ "Shrub",
-    x %in% c("Tree", "Tree; Shrub", "Tree;Shrub") ~ "Tree",
+    plant_type %in% c("shrub", "Shrub", "Subshrub; Shrub", "Shrub;Subshrub") ~ "Shrub",
+    plant_type %in% c("Tree", "Tree; Shrub", "Tree;Shrub") ~ "Tree",
     TRUE ~ "Unknown")
     )
 sjer_chem
@@ -65,14 +65,15 @@ Now we have a basic plot to add new concepts.
 A facet is a quick way to generate multiple plots by a factor in the data.  Using our new data, we can quickly generate a new plot for each plant type to visualze patterns _within_ as well as _between_ the types.
 
 ```{r facet-types}
-ggplot(sjer_chem, aes(x = totalN, y = totalC)) +
+ggplot(sjer_chem, aes(x = totalN, y = totalC, color = plant_type_fixed)) +
   geom_point() +
-  facet_wrap(~ plant_type_fixed) +
+  facet_wrap( ~ plant_type_fixed, nrow = 2) +
   # a different way to assign labels at once
   labs(title = "SJER Total Carbon vs. Nitrogen by plant type",
        x = "Total C",
        y = "Total N",
-       color = "Plant Type") 
+       color = "Plant Type") +
+  theme_light()
 
 ```
 
@@ -90,7 +91,7 @@ ggplot(aes(x = totalN, y = totalC, color = plant_type_fixed)) +
        x = "Total C",
        y = "Total N",
        color = "Plant Type") +
-  facet_grid(genus ~ species) + 
+  facet_grid(species ~ genus) + 
   theme(plot.margin=unit(c(.5,1,.5,1), "cm"), #adjust the margin (top, right, bottom, left)
           axis.text.x = element_text(angle = -60, hjust = -0.1)) # rotate the axis labels
 
@@ -108,15 +109,22 @@ Let's look at a a more specific series of data, comparing two different genus of
 ```{r}
 p1 <- sjer_chem %>% 
   filter(genus == "Pinus") %>% 
-  ggplot(aes(x = totalN, y = totalC)) +
+  ggplot(aes(x = totalN, y = totalC, color = species)) +
   geom_point() +
   ggtitle("Pinus species")
+p1
 
 p2 <- sjer_chem %>% 
   filter(genus == "Quercus") %>% 
-  ggplot(aes(x = totalN, y = totalC)) +
+  ggplot(aes(x = totalN, y = totalC, color = species)) +
   geom_point() +
   ggtitle("Quercus species")
+p2
+# put the two plots into a single plot
+grid.arrange(p1, p2)
+
+# put them side by side
+grid.arrange(p1, p2, ncol = 2, top = "Chemical Properties")
 
 p3 <- sjer_chem %>% 
   group_by(genus) %>% 
@@ -126,10 +134,10 @@ p3 <- sjer_chem %>%
   labs(title = "Sample mass by species", x = "Genus", y = "Dry Mass (g)") +
   theme(plot.margin=unit(c(.5,1,.5,1), "cm"), #adjust the margin (top, right, bottom, left)
   axis.text.x = element_text(angle = -20, hjust = -0.1)) # rotate the axis labels
-
+p3
 
 # A more complex layout requires nesting "grobs" of arranged plots into a different arrangment
-grid.arrange(arrangeGrob(p1, p2, nrow = 1), arrangeGrob(p3),
+grid.arrange(arrangeGrob(p1, p2, nrow = 1), arrangeGrob(h.4),
              nrow = 2, top = "Chemical Concentrations by Genus")
 ```
 
@@ -145,9 +153,9 @@ We can see that the ranges of values don't align, which can be a problem since w
 ```{r}
 # set the limits to the same range
 # an NA in any given position retains the existing limit
-p1a <- p1 + lims(y = c(NA, 60), x = c(0.8, 2.5))
+p1a <- p1 + lims(y = c(40, 60), x = c(0.8, 2.5))
 
-p2a <- p2 + lims(y = c(NA, 60), x = c(0.8, 2.5))
+p2a <- p2 + lims(y = c(40, 60), x = c(0.8, 2.5))
 
 grid.arrange(p1a, p2a, nrow = 2, top = "Chemical Concentrations by Genus")
 ```
@@ -156,7 +164,7 @@ You can use this same idea to restrict the range of data you are interested in.
 
 ```{r}
 # a simple example restricting the range of the x axis.
-p1 + xlim(1.2, 1.75)
+p2 + xlim(1.2, 1.75)
 ```
 
 
